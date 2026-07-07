@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#6E0F22">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fuel 175">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Fuel Log · Roll Tide</title>
+<style>
+  :root{--crimson:#9E1B32;--crimson-deep:#6E0F22;--crimson-bright:#C62B45;--paper:#F6F2F0;--card:#FFFFFF;--ink:#1A1113;--charcoal:#2B2A2E;--line:#E7DED9;--muted:#8A7F7B;--shadow:0 14px 30px -16px rgba(26,17,19,.5);--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;padding-bottom:calc(78px + var(--safe-b));max-width:520px;margin:0 auto;}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums;}
+  header{padding:calc(20px + var(--safe-t)) 20px 12px;}
+  .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--crimson);font-weight:800;}
+  .h1{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:3px 0 0;}
+  .h1 b{color:var(--crimson);}
+  .hound{height:13px;background-color:var(--crimson);background-image:linear-gradient(135deg,#fff 25%,transparent 25%),linear-gradient(225deg,#fff 25%,transparent 25%),linear-gradient(315deg,#fff 25%,transparent 25%),linear-gradient(45deg,#fff 25%,transparent 25%);background-size:13px 13px;background-position:0 0,6.5px 0,6.5px -6.5px,0 6.5px;opacity:.9;}
+  .view{padding:0 20px;display:none;}
+  .view.on{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  .fuel{position:relative;border-radius:24px;padding:22px;color:#fff;overflow:hidden;margin-top:16px;background:linear-gradient(150deg,var(--crimson-deep),var(--crimson) 78%);box-shadow:var(--shadow);}
+  .fuel.lean{background:linear-gradient(150deg,#1b1a1e,var(--charcoal) 78%);}
+  .fuel.hit{background:linear-gradient(150deg,#7d1024,var(--crimson-bright) 82%);}
+  .fuel .watermark{position:absolute;right:-8px;bottom:-26px;font-size:150px;font-weight:900;line-height:1;color:rgba(255,255,255,.07);font-family:Georgia,serif;font-style:italic;pointer-events:none;}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;position:relative;}
+  .daydate{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.7);font-weight:700;}
+  .dayhead{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:4px 0 10px;}
+  .goalpill{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;letter-spacing:.03em;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.16);}
+  .goalpill .dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .gauge{width:104px;height:104px;flex:none;position:relative;}
+  .gauge svg{transform:rotate(-90deg);display:block;}
+  .gauge .lbl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .gauge .lbl b{font-size:26px;font-weight:800;line-height:1;}
+  .gauge .lbl span{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-top:4px;}
+  .toggle{display:flex;gap:6px;background:rgba(255,255,255,.14);border-radius:12px;padding:4px;margin-top:16px;position:relative;}
+  .toggle button{flex:1;border:none;background:none;color:rgba(255,255,255,.7);font-family:inherit;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:8px 0;border-radius:9px;cursor:pointer;transition:.15s;}
+  .toggle button.on{background:#fff;color:var(--crimson-deep);}
+  .stats{display:flex;gap:20px;margin-top:16px;padding-top:15px;border-top:1px solid rgba(255,255,255,.2);position:relative;}
+  .stat .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.7);}
+  .stat .v{font-size:18px;font-weight:800;margin-top:4px;}
+  .stat .v small{font-size:11px;font-weight:600;color:rgba(255,255,255,.7);}
+  .section-label{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:24px 2px 12px;}
+  .meal{display:flex;align-items:flex-start;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 15px;margin-bottom:10px;cursor:pointer;user-select:none;transition:border-color .15s,background .15s,transform .06s;}
+  .meal:active{transform:scale(.99);}
+  .meal.on{background:#FBF3F4;border-color:#E9C9CF;}
+  .meal.cheat{background:#FBF3F4;border-color:#E9C9CF;border-style:dashed;}
+  .check{width:26px;height:26px;border-radius:9px;border:2px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;transition:.15s;margin-top:2px;}
+  .meal.on .check{background:var(--crimson);border-color:var(--crimson);}
+  .check svg{width:15px;height:15px;stroke:#fff;stroke-width:3.4;fill:none;opacity:0;transition:.15s;}
+  .meal.on .check svg{opacity:1;}
+  .meal .body{flex:1;min-width:0;}
+  .meal .slot{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;}
+  .meal .name{font-size:16px;font-weight:700;margin-top:2px;}
+  .meal .eat{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.4;}
+  .meal .macro{text-align:right;flex:none;padding-top:2px;}
+  .meal .macro b{font-size:17px;font-weight:800;color:var(--crimson);}
+  .meal .macro span{display:block;font-size:10px;color:var(--muted);letter-spacing:.06em;}
+  .sched{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);}
+  .sched .row{display:flex;align-items:center;gap:12px;padding:11px 15px;border-top:1px solid var(--line);font-size:14px;}
+  .sched .row:first-child{border-top:none;}
+  .sched .row.today{background:#FBF3F4;}
+  .sched .dow{width:40px;font-weight:800;}
+  .sched .plan{color:var(--muted);}
+  .sched .plan b{color:var(--crimson);font-weight:800;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow);}
+  .card h3{margin:0;font-size:18px;font-weight:800;letter-spacing:-.01em;}
+  .card .sub{font-size:12px;color:var(--muted);font-weight:600;margin-top:3px;letter-spacing:.02em;line-height:1.5;}
+  .tags{display:flex;gap:8px;margin:12px 0 4px;flex-wrap:wrap;}
+  .chip{font-size:12px;font-weight:800;padding:5px 10px;border-radius:999px;background:#F6E6E9;color:var(--crimson);}
+  .ing{list-style:none;padding:0;margin:14px 0 0;}
+  .ing li{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:14px;}
+  .ing li:first-child{border-top:none;}
+  .ing li b{margin-left:auto;color:var(--muted);font-weight:700;}
+  .carbrow{margin-top:12px;padding:11px 13px;border-radius:12px;background:#F8EBED;border:1px dashed #E3B9C1;font-size:13px;line-height:1.45;color:#7a2438;}
+  .carbrow.lean{background:#EEEDEF;border-color:#CFCCD2;color:#3a383e;}
+  .carbrow b{font-weight:800;}
+  .reftable{list-style:none;padding:0;margin:6px 0 0;}
+  .reftable li{display:flex;align-items:baseline;gap:8px;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px;}
+  .reftable li:first-child{border-top:none;}
+  .reftable .nm{flex:1;font-weight:600;}
+  .reftable .sv{color:var(--muted);font-size:12px;white-space:nowrap;}
+  .reftable .pr{font-weight:800;color:var(--crimson);white-space:nowrap;margin-left:4px;}
+  .shopbar{display:flex;justify-content:space-between;align-items:center;background:var(--crimson-deep);color:#fff;border-radius:16px;padding:14px 18px;margin-bottom:6px;box-shadow:var(--shadow);}
+  .shopbar .k{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.7);font-weight:700;}
+  .shopbar .v{font-size:22px;font-weight:800;}
+  .shopbar .v small{font-size:12px;font-weight:600;color:rgba(255,255,255,.6);}
+  .note{background:#F6E6E9;border:1px solid #E6C6CD;border-radius:14px;padding:13px 15px;font-size:13px;line-height:1.5;color:#6b2233;margin:14px 0 4px;}
+  .note b{color:var(--crimson);}
+  .note.gray{background:#EEEDEF;border-color:#D5D2D8;color:#3a383e;}
+  .note.gray b{color:var(--charcoal);}
+  .shop{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:9px;cursor:pointer;user-select:none;transition:.15s;}
+  .shop.on{opacity:.5;}
+  .shop.on .sname{text-decoration:line-through;}
+  .shop .body{flex:1;min-width:0;}
+  .sname{font-size:15px;font-weight:700;}
+  .sqty{font-size:12px;color:var(--muted);margin-top:1px;}
+  .scost{font-size:15px;font-weight:800;}
+  .prep{counter-reset:step;list-style:none;padding:0;margin:0;}
+  .prep li{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px 15px 54px;margin-bottom:11px;font-size:14px;line-height:1.5;}
+  .prep li::before{counter-increment:step;content:counter(step);position:absolute;left:15px;top:14px;width:26px;height:26px;border-radius:8px;background:var(--crimson);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;}
+  .prep li b{color:var(--ink);}
+  .foot{text-align:center;color:var(--muted);font-size:11px;letter-spacing:.04em;padding:22px 0 8px;}
+  .foot b{color:var(--crimson);font-weight:800;letter-spacing:.1em;}
+  nav{position:fixed;bottom:0;left:0;right:0;z-index:20;background:rgba(246,242,240,.92);backdrop-filter:saturate(1.5) blur(14px);border-top:1px solid var(--line);padding:8px 0 calc(8px + var(--safe-b));display:flex;max-width:520px;margin:0 auto;}
+  nav button{flex:1;background:none;border:none;padding:6px 0;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted);font-size:9.5px;font-weight:700;letter-spacing:.04em;cursor:pointer;font-family:inherit;text-transform:uppercase;}
+  nav button svg{width:22px;height:22px;stroke:currentColor;stroke-width:1.9;fill:none;}
+  nav button.on{color:var(--crimson);}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">Roll Tide · Fuel Log</div>
+  <div class="h1">175<b>g</b> Protein Floor</div>
+</header>
+<div class="hound"></div>
+
+<section id="today" class="view on">
+  <div class="fuel" id="fuelCard">
+    <div class="watermark">A</div>
+    <div class="top">
+      <div>
+        <div class="daydate mono" id="todayDate">—</div>
+        <div class="dayhead" id="dayHead">Today's Fuel</div>
+        <div class="goalpill" id="goalPill"><span class="dot"></span><span id="goalTxt">175g to go</span></div>
+      </div>
+      <div class="gauge">
+        <svg width="104" height="104" viewBox="0 0 104 104">
+          <circle cx="52" cy="52" r="46" stroke="rgba(255,255,255,.22)" stroke-width="9" fill="none"/>
+          <circle id="arc" cx="52" cy="52" r="46" stroke="url(#g)" stroke-width="9" fill="none" stroke-linecap="round" stroke-dasharray="289.02" stroke-dashoffset="289.02"/>
+          <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#FBD9DE"/></linearGradient></defs>
+        </svg>
+        <div class="lbl"><b class="mono" id="gaugeNum">0</b><span>of 175g</span></div>
+      </div>
+    </div>
+    <div class="toggle">
+      <button data-mode="train" id="mTrain" class="on">Training day</button>
+      <button data-mode="lean" id="mLean">Rest / lean</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Streak</div><div class="v mono" id="streakVal">0 <small>days</small></div></div>
+      <div class="stat"><div class="k">Calorie target</div><div class="v mono" id="kcalVal">~2,100</div></div>
+      <div class="stat"><div class="k">Meals</div><div class="v mono" id="mealVal">0/4</div></div>
+    </div>
+  </div>
+  <div class="section-label">Eat what's listed — tap each as you go</div>
+  <div id="mealList"></div>
+  <div class="foot"><b>ROLL TIDE ROLL</b></div>
+</section>
+
+<section id="meals" class="view">
+  <div class="section-label" style="margin-top:6px;">Your week — the app picks the day, not you</div>
+  <div class="sched" id="schedList"></div>
+  <div class="section-label">The meals · 176g floor · off the Aldi label</div>
+  <div id="mealCards"></div>
+  <div class="card" style="border-color:#E9C9CF;">
+    <h3>Straight off the Aldi label</h3>
+    <div class="sub">Real package numbers — trust these, no math. Match the brand on the shelf.</div>
+    <ul class="reftable" id="refList"></ul>
+  </div>
+  <div class="note gray">
+    <b>The toggle is the only choice you make.</b> Trained today → Training day (~2,100 kcal, carbs on). Took it easy → Rest / lean (~1,800 kcal, carbs down). The protein never moves.
+  </div>
+  <div class="foot">Chicken portions are RAW weight — weigh before cooking</div>
+</section>
+
+<section id="shop" class="view">
+  <div class="shopbar">
+    <div><div class="k">Weekly cart · full 7 days</div></div>
+    <div class="v mono" id="cartTotal">$49 <small>/wk</small></div>
+  </div>
+  <div class="note">
+    <b>One shop, ~$49, whole week.</b> The app already knows Tue &amp; Fri are tuna and Saturday dinner is your cheat — nothing to plan. Cheat-meal food isn't on this list; grab that separately.
+  </div>
+  <div id="shopList" style="margin-top:14px;"></div>
+  <div class="section-label" style="margin-top:20px;">Pantry · restock only when out</div>
+  <div id="pantryList"></div>
+  <div class="note gray" style="margin-top:14px;">
+    <b>Tuna:</b> chunk light (skipjack) only — 4 cans/week is fine at his size. Don't switch to albacore/white (more mercury). <b>Whey is optional</b> — eggs, chicken, milk and yogurt already clear 175g.
+  </div>
+  <div class="foot">Tap an item to cross it off</div>
+</section>
+
+<section id="prep" class="view">
+  <div class="section-label" style="margin-top:6px;">Cook the chicken once, eat all week</div>
+  <ol class="prep" id="prepList"></ol>
+  <div class="foot">Sunday · ~40 min hands-on</div>
+</section>
+
+<section id="guide" class="view">
+  <div class="section-label" style="margin-top:6px;">Start here — the whole plan, one screen</div>
+  <div class="card"><h3>The whole job</h3><div class="sub" style="font-size:14.5px;color:var(--ink);margin-top:8px;line-height:1.6;">Eat the four meals the <b>Today</b> screen shows you. Tap each one as you eat it. When the ring fills and says <b style="color:var(--crimson)">ROLL TIDE</b>, you hit your protein. Nothing to count or remember.</div></div>
+  <div class="card"><h3>You don't plan — the app does</h3><div class="sub" style="font-size:14.5px;color:var(--ink);margin-top:8px;line-height:1.6;">The week is fixed. <b>Tuesday and Friday lunch is tuna</b>, everything else is chicken, and <b style="color:var(--crimson)">Saturday dinner is your cheat meal</b>. Today always shows the right one for that day. You never decide.</div></div>
+  <div class="card"><h3>Training or rest day?</h3><div class="sub" style="font-size:14.5px;color:var(--ink);margin-top:8px;line-height:1.6;">Lifted, ran, or trained? Tap <b>Training day</b>. Took it easy? Tap <b>Rest / lean</b>. The meals update to show more or fewer carbs — <b style="color:var(--crimson)">the protein stays the same</b>.</div></div>
+  <div class="card"><h3>Shopping — once a week</h3><div class="sub" style="font-size:14.5px;color:var(--ink);margin-top:8px;line-height:1.6;">Open the <b>Shop</b> tab, buy exactly what's listed, match the brand names. About <b>$49</b> at Aldi. Pantry stuff (rice, oats, PB) only every couple weeks.</div></div>
+  <div class="card"><h3>Cooking the chicken</h3><div class="sub" style="font-size:14.5px;color:var(--ink);margin-top:8px;line-height:1.6;">Sunday: bake the whole pack — 400°F, ~25 min. Split it into <b>½-pound (8 oz) raw</b> pieces before cooking. Each = 50g, one for lunch, one for dinner. Season half two different ways.</div></div>
+  <div class="card" style="border-color:#E9C9CF;background:#FBF3F4;"><h3>The one rule</h3><div class="sub" style="font-size:14.5px;color:var(--ink);margin-top:8px;line-height:1.6;">Tight on money or appetite? Cut the <b>carbs</b> — rice, oats, potato. <b style="color:var(--crimson)">Never cut the protein.</b> Chicken, eggs, tuna, yogurt — that's the part that matters.</div></div>
+  <div class="foot"><b>ROLL TIDE ROLL</b></div>
+</section>
+
+<nav>
+  <button data-tab="today" class="on"><svg viewBox="0 0 24 24"><path d="M12 3l8 6v10a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1V9z"/></svg>Today</button>
+  <button data-tab="meals"><svg viewBox="0 0 24 24"><path d="M5 3v8a3 3 0 006 0V3M8 3v18M19 3c-1.5 1-2 3-2 6s.5 4 2 4v8"/></svg>Meals</button>
+  <button data-tab="shop"><svg viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12zM6 6L5 3H3M9 20a1 1 0 100 .1M18 20a1 1 0 100 .1"/></svg>Shop</button>
+  <button data-tab="prep"><svg viewBox="0 0 24 24"><path d="M4 11h16M6 11a6 6 0 0112 0M9 4v2M12 3v3M15 4v2M5 15h14l-1 5H6z"/></svg>Prep</button>
+  <button data-tab="guide"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 012-2h9l5 5v11a2 2 0 01-2 2H6a2 2 0 01-2-2zM9 8h5M9 12h6M9 16h4"/></svg>Guide</button>
+</nav>
+
+<script>
+(function(){
+  "use strict";
+  /* ============================================================
+     FUEL LOG — QUICK EDIT GUIDE  (everything you'll want to tweak)
+     ------------------------------------------------------------
+     After ANY change to files, bump the cache in sw.js
+     (fuel175-v1 -> -v2) or his phone keeps the old version.
+
+     1) DAILY PROTEIN GOAL ....... GOAL below (currently 175)
+     2) WHICH DAYS ARE TUNA ...... lunchFor()  (0=Sun..6=Sat; now Tue=2, Fri=5)
+     3) WHICH DAY IS CHEAT ....... dinnerFor() (now Sat=6)
+     4) MEAL FOOD / PORTIONS ..... the meal objects (BREAKFAST, CHICKEN_L,
+                                    TUNA_L, SNACK, CHICKEN_D, CHEAT).
+                                    eatT/eatL = the "what to eat" line shown on Today
+                                    (T=training, L=rest). carbT/carbL = carb line on cards.
+     5) PROTEIN PER SLOT ......... SLOTP (breakfast/lunch/snack/dinner grams).
+                                    If you change a meal's grams, change it here too —
+                                    this is what fills the ring.
+     6) SHOPPING LIST / PRICES ... SHOP array   (weekly cart)
+     7) PANTRY ITEMS ............. PANTRY array
+     8) LABEL REFERENCE CARD ..... ALDI_REF array
+     9) PREP STEPS ............... PREP array
+     A "reset" for his saved data = change CK (e.g. _rtr3 -> _rtr4).
+     ============================================================ */
+  var GOAL=175, CK="fuel175_rtr3";
+  var DOWNAMES=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  var BREAKFAST={name:"Protein oatmeal & eggs",eatT:"4 eggs · ¾ cup oats in milk · 1 tbsp peanut butter · banana",eatL:"4 eggs · ½ cup oats in milk",
+    ing:[["4 Goldhen large eggs","24g"],["¾ cup Millville oats","8g"],["cooked in 1 cup 2% milk","8g"]],
+    steps:"Cook the oats in the milk, eggs on the side.",carbT:"¾ cup oats + 1 tbsp peanut butter + banana",carbL:"½ cup oats"};
+  var CHICKEN_L={name:"Chicken bowl",eatT:"½ lb chicken · veg · ¾ cup rice",eatL:"½ lb chicken · veg",
+    ing:[["½ lb (8 oz) raw Kirkwood chicken","50g"],["Season's Choice veg","3g"]],
+    steps:"Reheat a ½-lb chicken portion (50g), microwave the veg.",carbT:"¾ cup brown rice",carbL:"skip the rice"};
+  var TUNA_L={name:"Tuna salad bowl",eatT:"2 cans tuna + ½ cup Greek yogurt · veg · ¾ cup rice",eatL:"2 cans tuna + ½ cup Greek yogurt · veg",
+    ing:[["2 cans Northern Catch tuna","38g"],["½ cup Greek yogurt (the dressing)","12g"],["Season's Choice veg","3g"]],
+    steps:"Drain 2 cans, mix with ½ cup Greek yogurt as the 'mayo' plus mustard, salt, pepper. That's 50g.",carbT:"¾ cup brown rice",carbL:"skip the rice"};
+  var SNACK={name:"Greek yogurt",eatT:"1.5 cups Greek yogurt · apple",eatL:"1.5 cups Greek yogurt · ½ apple",
+    ing:[["1.5 cups Friendly Farms Nonfat Greek yogurt","36g"],["Apple",""]],
+    steps:"2 label servings (18g each). Fruit stirred in.",carbT:"whole apple",carbL:"½ apple"};
+  var CHICKEN_D={name:"Chicken, second way",eatT:"½ lb chicken · veg · sweet potato",eatL:"½ lb chicken · veg · ½ sweet potato",
+    ing:[["½ lb (8 oz) raw Kirkwood chicken","50g"],["Season's Choice mixed veg","4g"]],
+    steps:"Same chicken as lunch, seasoned different — taco, BBQ, garlic-herb.",carbT:"1 sweet potato",carbL:"½ sweet potato"};
+  var CHEAT={name:"🎉 Cheat meal",eatT:"Eat what you want — you earned it",eatL:"Eat what you want — you earned it",
+    ing:[["Whatever you're craving",""]],steps:"Saturday night is yours — burger, pizza, wings, whatever. Tap it done and enjoy. Back on plan Sunday.",carbT:"",carbL:""};
+
+  // >>> SCHEDULE: tuna lunch days (2=Tue, 5=Fri). Change/add numbers 0-6 (0=Sun).
+  function lunchFor(dow){ return (dow===2||dow===5)?TUNA_L:CHICKEN_L; }
+  // >>> SCHEDULE: cheat dinner day (6=Sat). Change the number to move it.
+  function dinnerFor(dow){ return (dow===6)?CHEAT:CHICKEN_D; }
+  function slotsFor(dow){
+    return [
+      {id:"breakfast",protein:40,slot:"Breakfast",c:BREAKFAST},
+      {id:"lunch",protein:50,slot:"Lunch",c:lunchFor(dow)},
+      {id:"snack",protein:36,slot:"Snack",c:SNACK},
+      {id:"dinner",protein:50,slot:"Dinner",c:dinnerFor(dow)}
+    ];
+  }
+  var SLOTP={breakfast:40,lunch:50,snack:36,dinner:50};
+
+  var ALDI_REF=[["Kirkwood chicken breast","4 oz raw","25g"],["Goldhen large egg","1 egg","6g"],["Friendly Farms Nonfat Greek yogurt","¾ cup","18g"],["Northern Catch chunk light tuna","1 drained can","19g"],["Elevation whey (optional)","1 scoop","30g"],["Millville old-fashioned oats","½ cup dry","5g"],["Friendly Farms 2% milk","1 cup","8g"]];
+  var SHOP=[{name:"Kirkwood chicken breast",qty:"6 lb family pack · ½ lb raw/meal",cost:13},{name:"Goldhen large eggs",qty:"3 dozen · price swings by week",cost:8},{name:"Friendly Farms Nonfat Greek yogurt",qty:"3 × 32 oz tubs",cost:11},{name:"Friendly Farms 2% milk",qty:"1 gallon · for the oats",cost:3},{name:"Northern Catch chunk light tuna",qty:"4 cans · Tue + Fri lunches",cost:3},{name:"Season's Choice frozen broccoli",qty:"1 bag",cost:3},{name:"Season's Choice frozen mixed veg",qty:"1 bag",cost:3},{name:"Bananas",qty:"1 bunch",cost:2},{name:"Apples",qty:"1 bag",cost:3}];
+  var PANTRY=[{name:"Elevation whey protein",qty:"OPTIONAL · 30g/scoop · ~1 month",cost:20},{name:"Millville old-fashioned oats",qty:"1 tub ≈ 2 weeks",cost:3},{name:"Earthly Grains brown rice",qty:"lasts weeks",cost:4},{name:"Natural peanut butter",qty:"breakfast + lasts weeks",cost:4},{name:"Fish oil",qty:"optional · omega-3s",cost:6}];
+  var PREP=[
+    "<b>Chicken is the only cook.</b> Bake the whole pack at 400°F ~25 min. Portion into <b>½-lb (8 oz) raw</b> pieces before cooking — 50g each, lunch and dinner all week (skip Tue/Fri lunches and Sat dinner — those are tuna and your cheat).",
+    "<b>Season in two batches</b> so lunch and dinner aren't identical — half plain/garlic, half taco or BBQ.",
+    "<b>Breakfast is fresh</b> — oats in the microwave with milk, eggs on the side.",
+    "<b>Tuna nights (Tue/Fri)</b> take 2 minutes: drain 2 cans, mix with ½ cup Greek yogurt + mustard.",
+    "<b>Carbs to order.</b> Rice keeps 4–5 days; microwave a sweet potato fresh. Only cook the carbs the toggle says."
+  ];
+
+  function key(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  function load(){ try{ return JSON.parse(localStorage.getItem(CK))||{}; }catch(e){ return {}; } }
+  function save(o){ try{ localStorage.setItem(CK,JSON.stringify(o)); }catch(e){} }
+  var store=load(), now=new Date(), today=key(now), dow=now.getDay();
+  if(!store[today]) store[today]={meals:{},shop:{},mode:"train"};
+  if(!store[today].mode) store[today].mode="train";
+  if(Object.keys(store[today].shop||{}).length===0){
+    var ds=Object.keys(store).sort();
+    for(var i=ds.length-1;i>=0;i--){ if(ds[i]!==today&&store[ds[i]].shop&&Object.keys(store[ds[i]].shop).length){ store[today].shop=Object.assign({},store[ds[i]].shop); break; } }
+  }
+  var day=store[today], arcLen=2*Math.PI*46;
+  function protein(){ var p=0; for(var k in SLOTP){ if(day.meals[k]) p+=SLOTP[k]; } return p; }
+  function count(){ var c=0; for(var k in SLOTP){ if(day.meals[k]) c++; } return c; }
+  function hitOn(o){ if(!o||!o.meals) return false; var p=0; for(var k in SLOTP){ if(o.meals[k]) p+=SLOTP[k]; } return p>=GOAL; }
+  function streak(){ var d=new Date(),c=0; if(!hitOn(store[key(d)])) d.setDate(d.getDate()-1); for(var i=0;i<400;i++){ if(hitOn(store[key(d)])){ c++; d.setDate(d.getDate()-1); } else break; } return c; }
+
+  function renderTop(){
+    var p=protein(),pct=Math.min(1,p/GOAL),hit=p>=GOAL,lean=day.mode==="lean";
+    document.getElementById("arc").style.strokeDashoffset=(arcLen*(1-pct)).toFixed(1);
+    document.getElementById("gaugeNum").textContent=p;
+    document.getElementById("streakVal").innerHTML=streak()+' <small>days</small>';
+    document.getElementById("kcalVal").textContent=lean?"~1,800":"~2,100";
+    document.getElementById("mealVal").textContent=count()+"/4";
+    var card=document.getElementById("fuelCard"),txt=document.getElementById("goalTxt");
+    card.classList.toggle("lean",lean);
+    if(hit){ card.classList.add("hit"); txt.textContent="ROLL TIDE · "+p+"g"; }
+    else{ card.classList.remove("hit"); txt.textContent=(GOAL-p)+"g to go"; }
+    document.getElementById("mTrain").classList.toggle("on",!lean);
+    document.getElementById("mLean").classList.toggle("on",lean);
+    document.getElementById("dayHead").textContent=(dow===6?"Saturday · Cheat night":"Today's Fuel");
+  }
+  function renderTodayList(){
+    var el=document.getElementById("mealList"); el.innerHTML=""; var lean=day.mode==="lean";
+    slotsFor(dow).forEach(function(s){
+      var on=!!day.meals[s.id], cheat=(s.c===CHEAT);
+      var eat=lean?s.c.eatL:s.c.eatT;
+      var d=document.createElement("div");
+      d.className="meal"+(on?" on":"")+(cheat?" cheat":"");
+      d.innerHTML='<div class="check"><svg viewBox="0 0 20 20"><path d="M4 10l4 4 8-9"/></svg></div><div class="body"><div class="slot">'+s.slot+'</div><div class="name">'+s.c.name+'</div><div class="eat">'+eat+'</div></div><div class="macro"><b>'+s.protein+'g</b><span>protein</span></div>';
+      d.addEventListener("click",function(){ day.meals[s.id]=!day.meals[s.id]; store[today]=day; save(store); renderTodayList(); renderTop(); });
+      el.appendChild(d);
+    });
+  }
+  function renderSchedule(){
+    var order=[1,2,3,4,5,6,0], el=document.getElementById("schedList"); el.innerHTML="";
+    order.forEach(function(d){
+      var lunch=(lunchFor(d)===TUNA_L)?"<b>Tuna</b>":"Chicken";
+      var dinner=(dinnerFor(d)===CHEAT)?"<b>🎉 Cheat</b>":"Chicken";
+      var row=document.createElement("div"); row.className="row"+(d===dow?" today":"");
+      row.innerHTML='<div class="dow">'+DOWNAMES[d]+'</div><div class="plan">'+lunch+' · '+dinner+'</div>';
+      el.appendChild(row);
+    });
+  }
+  function renderCards(){
+    var el=document.getElementById("mealCards"); el.innerHTML=""; var lean=day.mode==="lean";
+    [BREAKFAST,CHICKEN_L,TUNA_L,SNACK,CHICKEN_D,CHEAT].forEach(function(m){
+      var c=document.createElement("div"); c.className="card";
+      var ing=m.ing.map(function(x){ return '<li>'+x[0]+(x[1]?'<b>'+x[1]+'</b>':'')+'</li>'; }).join("");
+      var html='<h3>'+m.name+'</h3><ul class="ing">'+ing+'</ul><div class="sub" style="margin-top:14px;">'+m.steps+'</div>';
+      if(m.carbT){ var carb=lean?m.carbL:m.carbT; html+='<div class="carbrow'+(lean?' lean':'')+'"><b>'+(lean?'Rest day:':'Training day:')+'</b> '+carb+'</div>'; }
+      c.innerHTML=html; el.appendChild(c);
+    });
+  }
+  function renderRef(){ document.getElementById("refList").innerHTML=ALDI_REF.map(function(r){ return '<li><span class="nm">'+r[0]+'</span><span class="sv">'+r[1]+'</span><span class="pr">'+r[2]+'</span></li>'; }).join(""); }
+  function shopRow(s){
+    var kk=s.name,on=!!day.shop[kk],d=document.createElement("div"); d.className="shop"+(on?" on":"");
+    d.innerHTML='<div class="check">'+(on?'<svg viewBox="0 0 20 20" style="width:15px;height:15px;stroke:var(--muted);stroke-width:3;fill:none;opacity:1"><path d="M4 10l4 4 8-9"/></svg>':'')+'</div><div class="body"><div class="sname">'+s.name+'</div><div class="sqty">'+s.qty+'</div></div><div class="scost mono">$'+s.cost+'</div>';
+    d.addEventListener("click",function(){ day.shop[kk]=!day.shop[kk]; store[today]=day; save(store); renderShop(); });
+    return d;
+  }
+  function renderShop(){
+    var el=document.getElementById("shopList"); el.innerHTML=""; SHOP.forEach(function(s){ el.appendChild(shopRow(s)); });
+    var pl=document.getElementById("pantryList"); pl.innerHTML=""; PANTRY.forEach(function(s){ pl.appendChild(shopRow(s)); });
+    document.getElementById("cartTotal").innerHTML="$"+SHOP.reduce(function(a,s){ return a+s.cost; },0)+' <small>/wk</small>';
+  }
+  function renderPrep(){ document.getElementById("prepList").innerHTML=PREP.map(function(p){ return "<li>"+p+"</li>"; }).join(""); }
+
+  document.getElementById("todayDate").textContent=now.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"}).toUpperCase();
+  document.querySelectorAll(".toggle button").forEach(function(b){ b.addEventListener("click",function(){ day.mode=b.dataset.mode; store[today]=day; save(store); renderTop(); renderTodayList(); renderCards(); }); });
+  var tabs=document.querySelectorAll("nav button");
+  tabs.forEach(function(b){ b.addEventListener("click",function(){ tabs.forEach(function(x){ x.classList.remove("on"); }); b.classList.add("on"); document.querySelectorAll(".view").forEach(function(v){ v.classList.remove("on"); }); document.getElementById(b.dataset.tab).classList.add("on"); window.scrollTo(0,0); }); });
+  renderTop(); renderTodayList(); renderSchedule(); renderCards(); renderRef(); renderShop(); renderPrep();
+  if("serviceWorker" in navigator){ window.addEventListener("load",function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); }); }
+})();
+</script>
+</body>
+</html>
